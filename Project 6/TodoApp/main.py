@@ -20,7 +20,8 @@ app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 
 @app.get("/")
 def home(request: Request):
-    return templates.TemplateResponse(request=request, name="music.html", context={})
+    user = auth.decode_access_token(request.cookies.get("access_token"))
+    return templates.TemplateResponse(request=request, name="music.html", context={"user": user})
 
 
 @app.get("/healthy")

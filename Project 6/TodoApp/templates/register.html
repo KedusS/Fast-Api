@@ -3,12 +3,12 @@
 {% block title %}Create account | Juicebox{% endblock %}
 
 {% block content %}
-<section class="auth-shell">
-  <div class="auth-card">
-    <p class="eyebrow">YOUR MUSIC, YOUR MIX</p>
-    <h1>Create your account</h1>
-    <p class="muted">Save playlists and make clean or explicit versions.</p>
-    <form id="registerForm">
+<div class="container">
+  <section class="card auth-card">
+    <div class="card-header">Create your Juicebox account</div>
+    <div class="card-body">
+      <p class="card-text">Save playlists and make clean or explicit versions.</p>
+      <form id="registerForm">
       <div class="form-row">
         <div class="form-group col-md-6">
           <label for="email">Email</label>
@@ -41,9 +41,9 @@
       </div>
       <button type="submit" class="btn btn-primary btn-block">Create account</button>
       <p id="authError" class="form-error" role="alert" hidden></p>
-    </form>
-    <p class="auth-footer">Already have an account? <a href="/auth/login-page">Log in</a></p>
-  </div>
-</section>
+      </form>
+    </div>
+    <div class="card-footer">Already have an account? <a href="/auth/login-page">Log in</a></div>
+  </section>
+</div>
 {% endblock %}
-

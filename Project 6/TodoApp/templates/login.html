@@ -3,11 +3,11 @@
 {% block title %}Log in | Juicebox{% endblock %}
 
 {% block content %}
-<section class="auth-shell">
-    <div class="auth-card">
-        <p class="eyebrow">WELCOME BACK</p>
-        <h1>Log in to Juicebox</h1>
-        <p class="muted">Pick up where your music left off.</p>
+<div class="container">
+    <section class="card auth-card">
+        <div class="card-header">Log in to Juicebox</div>
+        <div class="card-body">
+            <p class="card-text">Sign in to save and manage your playlists.</p>
         <form action="/auth/login" method="post">
             <div class="form-group">
                 <label for="username">Username</label>
@@ -22,7 +22,8 @@
             <p class="form-error" role="alert">{{ error }}</p>
             {% endif %}
         </form>
-        <p class="auth-footer">New here? <a href="/auth/register-page">Create an account</a></p>
-    </div>
- </section>
+        </div>
+        <div class="card-footer">New here? <a href="/auth/register-page">Create an account</a></div>
+    </section>
+</div>
 {% endblock %}

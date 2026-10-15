@@ -57,11 +57,17 @@ templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "
 
 @router.get("/login-page")
 def render_login_page(request: Request):
-    return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
+    user = decode_access_token(request.cookies.get("access_token"))
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"error": None, "user": user},
+    )
 
 @router.get("/register-page")
 def render_register_page(request: Request):
-    return templates.TemplateResponse(request=request, name="register.html", context={})
+    user = decode_access_token(request.cookies.get("access_token"))
+    return templates.TemplateResponse(request=request, name="register.html", context={"user": user})
 
 
 @router.post("/login")
@@ -71,12 +77,16 @@ async def login_from_form(
     password: Annotated[str, Form()],
     db: db_dependency,
 ):
+    """Validate credentials, then persist the token in a browser cookie."""
     user = authenticate_user(username, password, db)
     if not user:
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={"error": "Incorrect username or password."},
+            context={
+                "error": "Incorrect username or password.",
+                "user": decode_access_token(request.cookies.get("access_token")),
+            },
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -111,19 +121,30 @@ def create_access_token(username: str, user_id: int, role: str, expires_delta: t
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+def decode_access_token(token: str | None) -> dict | None:
+    """Return identity data for valid tokens; treat missing or invalid cookies as logged out."""
+    if not token:
+        return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get('sub')
-        user_id: int = payload.get('id')
-        user_role: str = payload.get('role')
-        if username is None or user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Could not validate user.')
-        return {'username': username, 'id': user_id, 'user_role': user_role}
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate user.')
+        return None
+
+    username = payload.get("sub")
+    user_id = payload.get("id")
+    if username is None or user_id is None:
+        return None
+    return {"username": username, "id": user_id, "user_role": payload.get("role")}
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    user = decode_access_token(token)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate user.",
+        )
+    return user
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -154,7 +175,5 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
 
     return {'access_token': token, 'token_type': 'bearer'}
-
-
 
 

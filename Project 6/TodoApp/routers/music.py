@@ -66,6 +66,7 @@ class VariantPreviewResponse(BaseModel):
 
 
 def _get_owned_playlist(db: Session, playlist_id: int, owner_id: int) -> Playlists:
+    """Look up a playlist only within its owner's records."""
     playlist = (
         db.query(Playlists)
         .filter(Playlists.id == playlist_id, Playlists.owner_id == owner_id)
@@ -99,6 +100,7 @@ def _playlist_response(db: Session, playlist: Playlists) -> PlaylistResponse:
 def _build_variant_preview(
     db: Session, playlist: Playlists, target_explicit: bool
 ) -> VariantPreviewResponse:
+    """Match each song to the requested version and collect missing matches."""
     preview_tracks = []
     unresolved_track_ids = []
 
@@ -141,6 +143,7 @@ async def create_playlist(
     db: db_dependency,
     playlist_request: PlaylistCreateRequest,
 ):
+    # Reject unknown song IDs before saving the playlist or its track links.
     track_ids = set(playlist_request.track_ids)
     tracks_by_id = {
         track.id: track
@@ -174,6 +177,59 @@ async def list_playlists(user: user_dependency, db: db_dependency):
         .all()
     )
     return [_playlist_response(db, playlist) for playlist in playlists]
+
+
+@router.put("/playlists/{playlist_id}", response_model=PlaylistResponse)
+async def update_playlist(
+    user: user_dependency,
+    db: db_dependency,
+    playlist_request: PlaylistCreateRequest,
+    playlist_id: int = Path(gt=0),
+):
+    # Validate the replacement list first so an invalid edit leaves the playlist unchanged.
+    playlist = _get_owned_playlist(db, playlist_id, user["id"])
+    track_ids = set(playlist_request.track_ids)
+    tracks_by_id = {
+        track.id: track
+        for track in db.query(Tracks).filter(Tracks.id.in_(track_ids)).all()
+    }
+    missing_track_ids = sorted(track_ids - tracks_by_id.keys())
+    if missing_track_ids:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": "Some tracks do not exist.", "track_ids": missing_track_ids},
+        )
+
+    playlist.name = playlist_request.name
+    db.query(PlaylistTracks).filter(PlaylistTracks.playlist_id == playlist.id).delete(
+        synchronize_session=False
+    )
+    db.add_all(
+        PlaylistTracks(playlist_id=playlist.id, track_id=track_id, position=position)
+        for position, track_id in enumerate(playlist_request.track_ids)
+    )
+    db.commit()
+    db.refresh(playlist)
+    return _playlist_response(db, playlist)
+
+
+@router.delete("/playlists/{playlist_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_playlist(
+    user: user_dependency,
+    db: db_dependency,
+    playlist_id: int = Path(gt=0),
+):
+    playlist = _get_owned_playlist(db, playlist_id, user["id"])
+    # Remove song links and detach derived versions before deleting the source.
+    db.query(PlaylistTracks).filter(PlaylistTracks.playlist_id == playlist.id).delete(
+        synchronize_session=False
+    )
+    db.query(Playlists).filter(Playlists.source_playlist_id == playlist.id).update(
+        {Playlists.source_playlist_id: None},
+        synchronize_session=False,
+    )
+    db.delete(playlist)
+    db.commit()
 
 
 @router.get("/playlists/{playlist_id}", response_model=PlaylistResponse)
@@ -212,6 +268,7 @@ async def create_playlist_variant(
     playlist_id: int = Path(gt=0),
 ):
     source_playlist = _get_owned_playlist(db, playlist_id, user["id"])
+    # Do not create a partial variant when any song lacks the requested version.
     preview = _build_variant_preview(db, source_playlist, variant_request.target_explicit)
     if preview.unresolved_track_ids:
         raise HTTPException(

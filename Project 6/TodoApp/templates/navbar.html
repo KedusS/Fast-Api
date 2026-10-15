@@ -4,15 +4,19 @@
     <div class="nav-links">
       <a class="nav-link" href="/#catalog">Discover</a>
       <a class="nav-link" href="/#playlists">Your playlists</a>
+      {% if user %}
+      <a class="nav-link" href="/#account">Account</a>
+      {% endif %}
     </div>
     <div class="nav-account">
+      {% if not user %}
       <a class="btn btn-outline-light" id="nav-login" href="/auth/login-page">Log in</a>
       <a class="btn btn-light" id="nav-register" href="/auth/register-page">Sign up</a>
-      <button type="button" class="btn btn-outline-light" id="nav-logout" hidden>Log out</button>
+      {% else %}
+      <button type="button" class="btn btn-outline-light" id="nav-logout">Log out</button>
+      {% endif %}
     </div>
   </nav>
 </div>
-
-
 
 

@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+from datetime import timedelta
 from ..main import app
+from ..routers.auth import create_access_token
 from fastapi import status
 
 client = TestClient(app)
@@ -35,3 +37,22 @@ def test_todo_routes_are_not_mounted():
 def test_auth_pages_render():
     assert client.get("/auth/login-page").status_code == status.HTTP_200_OK
     assert client.get("/auth/register-page").status_code == status.HTTP_200_OK
+
+
+def test_login_and_signup_links_only_render_when_logged_out():
+    anonymous_response = client.get("/")
+    assert 'id="nav-login"' in anonymous_response.text
+    assert 'id="nav-register"' in anonymous_response.text
+    assert 'id="nav-logout"' not in anonymous_response.text
+
+    token = create_access_token("web-user", 1, "user", timedelta(minutes=5))
+    authenticated_response = client.get("/", cookies={"access_token": token})
+    assert 'id="nav-login"' not in authenticated_response.text
+    assert 'id="nav-register"' not in authenticated_response.text
+    assert 'id="nav-logout"' in authenticated_response.text
+    assert 'id="passwordForm"' in authenticated_response.text
+
+
+def test_password_form_is_hidden_when_logged_out():
+    response = client.get("/")
+    assert 'id="passwordForm"' not in response.text

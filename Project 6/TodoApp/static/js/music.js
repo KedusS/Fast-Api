@@ -3,12 +3,11 @@
   const loginNav = document.getElementById("nav-login");
   const registerNav = document.getElementById("nav-register");
   const logoutNav = document.getElementById("nav-logout");
-  const logoutButton = document.getElementById("logoutButton");
 
   if (loginNav) loginNav.hidden = Boolean(token);
   if (registerNav) registerNav.hidden = Boolean(token);
   if (logoutNav) logoutNav.hidden = !token;
-  logoutButton?.addEventListener("click", () => {
+  logoutNav?.addEventListener("click", () => {
     document.cookie = "access_token=; Max-Age=0; path=/";
     window.location.href = "/";
   });
@@ -18,10 +17,15 @@
   const playlistGrid = document.getElementById("playlistGrid");
   const playlistStatus = document.getElementById("playlistStatus");
   const playlistForm = document.getElementById("playlistForm");
+  const playlistSubmit = document.getElementById("playlistSubmit");
+  const cancelPlaylistEdit = document.getElementById("cancelPlaylistEdit");
+  const passwordForm = document.getElementById("passwordForm");
+  const passwordStatus = document.getElementById("passwordStatus");
 
   if (!trackGrid || !catalogStatus || !playlistGrid || !playlistStatus || !playlistForm) return;
 
   let tracks = [];
+  let editingPlaylistId = null;
   loadTracks();
   if (token) {
     loadPlaylists();
@@ -45,29 +49,75 @@
 
     const name = new FormData(playlistForm).get("name");
     try {
-      await apiRequest("/music/playlists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, track_ids: selectedIds }),
-      });
-      playlistForm.reset();
-      trackGrid.querySelectorAll(".track-select:checked").forEach((input) => {
-        input.checked = false;
-      });
-      setStatus(playlistStatus, "Playlist created.");
+      // Reuse the form for creating playlists and saving edits.
+      const isEditing = editingPlaylistId !== null;
+      await apiRequest(
+        isEditing ? `/music/playlists/${editingPlaylistId}` : "/music/playlists",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, track_ids: selectedIds }),
+        },
+      );
+      resetPlaylistForm();
+      setStatus(playlistStatus, isEditing ? "Playlist updated." : "Playlist created.");
       await loadPlaylists();
     } catch (error) {
       setStatus(playlistStatus, error.message, true);
     }
   });
 
+  cancelPlaylistEdit?.addEventListener("click", () => {
+    resetPlaylistForm();
+    setStatus(playlistStatus, "Playlist edit cancelled.");
+  });
+
+  passwordForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(passwordForm);
+    const newPassword = form.get("new_password");
+    if (newPassword !== form.get("confirm_password")) {
+      setStatus(passwordStatus, "The new passwords do not match.", true);
+      return;
+    }
+
+    try {
+      await apiRequest("/user/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: form.get("password"),
+          new_password: newPassword,
+        }),
+      });
+      passwordForm.reset();
+      setStatus(passwordStatus, "Password updated.");
+    } catch (error) {
+      setStatus(passwordStatus, error.message, true);
+    }
+  });
+
   playlistGrid.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-target-explicit]");
+    const button = event.target.closest("[data-target-explicit], [data-delete-playlist], [data-edit-playlist]");
     if (!button) return;
+
+    if (button.hasAttribute("data-edit-playlist")) {
+      startPlaylistEdit(button.dataset.playlistId);
+      return;
+    }
 
     button.disabled = true;
     try {
       const playlistId = button.dataset.playlistId;
+      if (button.hasAttribute("data-delete-playlist")) {
+        // Ask before making the destructive delete request.
+        if (!window.confirm("Delete this playlist? This cannot be undone.")) return;
+        await apiRequest(`/music/playlists/${playlistId}`, { method: "DELETE" });
+        setStatus(playlistStatus, "Playlist deleted.");
+        await loadPlaylists();
+        return;
+      }
+
       const targetExplicit = button.dataset.targetExplicit === "true";
       await apiRequest(`/music/playlists/${playlistId}/variants`, {
         method: "POST",
@@ -111,44 +161,24 @@
   function renderTracks() {
     trackGrid.replaceChildren();
     tracks.forEach((track, index) => {
-      const card = document.createElement("label");
-      card.className = "track-card";
-
-      const art = document.createElement("span");
-      art.className = "track-art";
-      art.setAttribute("aria-hidden", "true");
-      art.textContent = String(index + 1).padStart(2, "0");
-
-      const info = document.createElement("span");
-      info.className = "track-info";
-      const title = document.createElement("span");
-      title.className = "track-info-title";
+      const row = document.createElement("tr");
+      const number = document.createElement("td");
+      number.textContent = String(index + 1);
+      const title = document.createElement("td");
       title.textContent = track.title;
-      const heading = document.createElement("h3");
-      heading.append(title);
-      const artist = document.createElement("p");
+      const artist = document.createElement("td");
       artist.textContent = track.artist;
-      info.append(heading, artist);
-      if (track.explicit) {
-        const badge = document.createElement("span");
-        badge.className = "explicit-badge";
-        badge.textContent = "EXPLICIT";
-        info.append(badge);
-      } else {
-        const badge = document.createElement("span");
-        badge.className = "explicit-badge";
-        badge.textContent = "CLEAN";
-        info.append(badge);
-      }
-
+      const version = document.createElement("td");
+      version.textContent = track.explicit ? "Explicit" : "Clean";
       const checkbox = document.createElement("input");
       checkbox.className = "track-select";
       checkbox.type = "checkbox";
       checkbox.value = track.id;
       checkbox.setAttribute("aria-label", `Add ${track.title} to your playlist`);
-
-      card.append(art, info, checkbox);
-      trackGrid.append(card);
+      const selection = document.createElement("td");
+      selection.append(checkbox);
+      row.append(number, title, artist, version, selection);
+      trackGrid.append(row);
     });
   }
 
@@ -179,12 +209,24 @@
       const actions = document.createElement("div");
       actions.className = "playlist-actions";
       actions.append(
+        makeEditButton(playlist),
         makeVariantButton(playlist, false),
         makeVariantButton(playlist, true),
+        makeDeleteButton(playlist),
       );
       card.append(actions);
       playlistGrid.append(card);
     });
+  }
+
+  function makeEditButton(playlist) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-secondary";
+    button.dataset.playlistId = playlist.id;
+    button.dataset.editPlaylist = "";
+    button.textContent = "Edit playlist";
+    return button;
   }
 
   function makeVariantButton(playlist, targetExplicit) {
@@ -198,8 +240,48 @@
     return button;
   }
 
+  function makeDeleteButton(playlist) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-outline-primary";
+    button.dataset.playlistId = playlist.id;
+    button.dataset.deletePlaylist = "";
+    button.textContent = "Delete playlist";
+    return button;
+  }
+
+  async function startPlaylistEdit(playlistId) {
+    try {
+      const playlist = await apiRequest(`/music/playlists/${playlistId}`);
+      editingPlaylistId = playlist.id;
+      playlistForm.elements.name.value = playlist.name;
+      // Reflect the saved songs in the catalog checkboxes for editing.
+      const selectedTrackIds = new Set(playlist.tracks.map((track) => track.id));
+      trackGrid.querySelectorAll(".track-select").forEach((input) => {
+        input.checked = selectedTrackIds.has(Number(input.value));
+      });
+      playlistSubmit.textContent = "Save changes";
+      cancelPlaylistEdit.hidden = false;
+      setStatus(playlistStatus, "Update the name or selected tracks, then save changes.");
+      document.getElementById("playlists").scrollIntoView({ behavior: "smooth" });
+    } catch (error) {
+      setStatus(playlistStatus, error.message, true);
+    }
+  }
+
+  function resetPlaylistForm() {
+    editingPlaylistId = null;
+    playlistForm.reset();
+    trackGrid.querySelectorAll(".track-select:checked").forEach((input) => {
+      input.checked = false;
+    });
+    playlistSubmit.textContent = "Create playlist";
+    cancelPlaylistEdit.hidden = true;
+  }
+
   async function apiRequest(url, options = {}) {
     const headers = new Headers(options.headers || {});
+    // Share authentication and API error handling across playlist actions.
     if (token) headers.set("Authorization", `Bearer ${token}`);
     const response = await fetch(url, { ...options, headers });
     const body = response.status === 204 ? null : await response.json();
