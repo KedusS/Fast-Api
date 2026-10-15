@@ -18,6 +18,13 @@ def test_home_page_is_music_app():
     assert "Discover tracks" in response.text
     assert "Your playlists" in response.text
     assert "Todo" not in response.text
+    assert "/static/css/base.css" in response.text
+    assert "/static/js/music.js" in response.text
+
+
+def test_frontend_assets_are_served():
+    assert client.get("/static/css/base.css").status_code == status.HTTP_200_OK
+    assert client.get("/static/js/music.js").status_code == status.HTTP_200_OK
 
 
 def test_todo_routes_are_not_mounted():

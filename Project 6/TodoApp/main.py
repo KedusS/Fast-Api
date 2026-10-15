@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from .models import Base
 from .database import engine
@@ -6,13 +8,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from .seed import seed_catalog
 
+APP_DIR = Path(__file__).resolve().parent
 app = FastAPI()
-templates = Jinja2Templates(directory="TodoApp/templates")
+templates = Jinja2Templates(directory=APP_DIR / "templates")
 
 Base.metadata.create_all(bind=engine)
 seed_catalog()
 
-app.mount("/static", StaticFiles(directory="TodoApp/static"), name="static")
+app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 
 
 @app.get("/")

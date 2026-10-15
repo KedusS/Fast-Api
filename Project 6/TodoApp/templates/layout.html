@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', path='/css/bootstrap.css') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Juicebox{% endblock %}</title>
@@ -15,9 +14,6 @@
     {% block content %}{% endblock %}
   </main>
 
-    <script src="{{ url_for('static', path='/js/jquery-slim.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/popper.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/bootstrap.js') }}"></script>
     <script src="{{ url_for('static', path='/js/base.js') }}" defer></script>
     <script src="{{ url_for('static', path='/js/music.js') }}" defer></script>
 </body>

@@ -1,4 +1,5 @@
 from datetime import timedelta, datetime, timezone
+from pathlib import Path
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -48,7 +49,7 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-templates = Jinja2Templates(directory="TodoApp/templates")
+templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "templates")
 
 
 ### Pages ###
@@ -121,7 +122,6 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
 
     return {'access_token': token, 'token_type': 'bearer'}
-
 
 
 
