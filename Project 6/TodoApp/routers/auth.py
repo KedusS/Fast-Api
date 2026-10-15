@@ -1,10 +1,11 @@
 from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
+from starlette.responses import RedirectResponse
 from ..database import SessionLocal
 from ..models import Users
 from passlib.context import CryptContext
@@ -56,11 +57,42 @@ templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "
 
 @router.get("/login-page")
 def render_login_page(request: Request):
-    return templates.TemplateResponse(request=request, name="login.html", context={})
+    return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
 
 @router.get("/register-page")
 def render_register_page(request: Request):
     return templates.TemplateResponse(request=request, name="register.html", context={})
+
+
+@router.post("/login")
+async def login_from_form(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    db: db_dependency,
+):
+    user = authenticate_user(username, password, db)
+    if not user:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Incorrect username or password."},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
+    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        max_age=20 * 60,
+        path="/",
+        secure=request.url.scheme == "https",
+        httponly=False,
+        samesite="lax",
+    )
+    return response
+
 
 ### Endpoints ###
 def authenticate_user(username: str, password: str, db):
@@ -122,7 +154,6 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
 
     return {'access_token': token, 'token_type': 'bearer'}
-
 
 
 

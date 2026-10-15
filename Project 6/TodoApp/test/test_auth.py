@@ -21,6 +21,28 @@ def test_authenticate_user(test_user):
     assert wrong_password_user is False
 
 
+def test_login_form_redirects_and_sets_access_cookie(test_user):
+    response = client.post(
+        "/auth/login",
+        data={"username": test_user.username, "password": "testpassword"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+    assert response.cookies.get("access_token")
+
+
+def test_login_form_shows_error_for_invalid_credentials():
+    response = client.post(
+        "/auth/login",
+        data={"username": "unknown-user", "password": "wrong-password"},
+    )
+
+    assert response.status_code == 401
+    assert "Incorrect username or password." in response.text
+
+
 def test_create_access_token():
     username = 'testuser'
     user_id = 1
@@ -56,7 +78,6 @@ async def test_get_current_user_missing_payload():
 
     assert excinfo.value.status_code == 401
     assert excinfo.value.detail == 'Could not validate user.'
-
 
 
 

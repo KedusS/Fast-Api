@@ -1,28 +1,5 @@
 (() => {
-  const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
-
-  loginForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const error = document.getElementById("authError");
-    setError(error, "");
-    const payload = new URLSearchParams(new FormData(loginForm));
-
-    try {
-      const response = await fetch("/auth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: payload,
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(getErrorMessage(result));
-
-      document.cookie = `access_token=${encodeURIComponent(result.access_token)}; Max-Age=1200; Path=/; SameSite=Lax`;
-      window.location.href = "/";
-    } catch (requestError) {
-      setError(error, requestError.message || "Unable to log in. Please try again.");
-    }
-  });
 
   registerForm?.addEventListener("submit", async (event) => {
     event.preventDefault();

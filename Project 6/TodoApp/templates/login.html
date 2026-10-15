@@ -8,7 +8,7 @@
         <p class="eyebrow">WELCOME BACK</p>
         <h1>Log in to Juicebox</h1>
         <p class="muted">Pick up where your music left off.</p>
-        <form id="loginForm">
+        <form action="/auth/login" method="post">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input id="username" type="text" class="form-control" name="username" autocomplete="username" required>
@@ -18,7 +18,9 @@
                 <input id="password" type="password" class="form-control" name="password" autocomplete="current-password" required>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Log in</button>
-            <p id="authError" class="form-error" role="alert" hidden></p>
+            {% if error %}
+            <p class="form-error" role="alert">{{ error }}</p>
+            {% endif %}
         </form>
         <p class="auth-footer">New here? <a href="/auth/register-page">Create an account</a></p>
     </div>
