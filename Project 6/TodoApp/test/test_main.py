@@ -11,3 +11,20 @@ def test_return_health_check():
     assert response.json() == {'status': 'Healthy'}
 
 
+def test_home_page_is_music_app():
+    response = client.get("/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "Discover tracks" in response.text
+    assert "Your playlists" in response.text
+    assert "Todo" not in response.text
+
+
+def test_todo_routes_are_not_mounted():
+    assert client.get("/todos/todo-page").status_code == status.HTTP_404_NOT_FOUND
+    assert client.get("/admin/todo").status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_auth_pages_render():
+    assert client.get("/auth/login-page").status_code == status.HTTP_200_OK
+    assert client.get("/auth/register-page").status_code == status.HTTP_200_OK

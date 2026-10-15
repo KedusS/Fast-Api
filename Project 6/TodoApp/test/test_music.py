@@ -5,10 +5,26 @@ from sqlalchemy import text
 from ..models import PlaylistTracks, Playlists, Tracks
 from ..routers.auth import get_current_user
 from ..routers.music import get_db
+from ..seed import SAMPLE_TRACKS
 from .utils import TestingSessionLocal, app, client, engine, override_get_current_user, override_get_db
 
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_current_user] = override_get_current_user
+
+
+def test_seed_catalog_uses_juice_wrld_song_titles():
+    assert {track["artist"] for track in SAMPLE_TRACKS} == {"Juice WRLD"}
+    assert {track["title"] for track in SAMPLE_TRACKS} == {
+        "Lucid Dreams",
+        "All Girls Are the Same",
+        "Robbery",
+        "Wishing Well",
+        "Righteous",
+    }
+    versions_by_group = {}
+    for track in SAMPLE_TRACKS:
+        versions_by_group.setdefault(track["version_group"], set()).add(track["explicit"])
+    assert all(versions == {True, False} for versions in versions_by_group.values())
 
 
 @pytest.fixture

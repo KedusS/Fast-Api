@@ -1,63 +1,49 @@
-{% include 'layout.html' %}
+{% extends 'layout.html' %}
 
+{% block title %}Create account | Juicebox{% endblock %}
 
-<div class="container">
-  <div class="card">
-    <div class="card-header">
-      Register
-    </div>
-    <div class="card-body">
-      <form id="registerForm">
-        <div class="form-row">
-          <div class="form-group col-md-6">
-            <label>Email</label>
-            <input type="text" class="form-control" name="email" required>
-          </div>
-          <div class="form-group col-md-6">
-            <label>Username</label>
-            <input type="text" class="form-control" name="username" required>
-          </div>
+{% block content %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <p class="eyebrow">YOUR MUSIC, YOUR MIX</p>
+    <h1>Create your account</h1>
+    <p class="muted">Save playlists and make clean or explicit versions.</p>
+    <form id="registerForm">
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="email">Email</label>
+          <input id="email" type="email" class="form-control" name="email" autocomplete="email" required>
         </div>
-        <div class="form-row">
-          <div class="form-group col-md-6">
-            <label>First Name</label>
-            <input type="text" class="form-control" name="firstname" required>
-          </div>
-          <div class="form-group col-md-6">
-            <label>Last Name</label>
-            <input type="text" class="form-control" name="lastname" required>
-          </div>
+        <div class="form-group col-md-6">
+          <label for="newUsername">Username</label>
+          <input id="newUsername" type="text" class="form-control" name="username" autocomplete="username" required>
         </div>
-        <div class="form-row">
-          <div class="form-group col-md-6">
-            <label>Role</label>
-            <input type="text" class="form-control" name="role" required>
-          </div>
-          <div class="form-group col-md-6">
-            <label>Phone Number</label>
-            <input type="text" class="form-control" name="phone_number" autocomplete="phone_number" required>
-          </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="firstname">First name</label>
+          <input id="firstname" type="text" class="form-control" name="firstname" autocomplete="given-name" required>
         </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" class="form-control" name="password" autocomplete="new-password" required>
+        <div class="form-group col-md-6">
+          <label for="lastname">Last name</label>
+          <input id="lastname" type="text" class="form-control" name="lastname" autocomplete="family-name" required>
         </div>
-        <div class="form-group">
-          <label>Verify Password</label>
-          <input type="password" class="form-control" name="password2" autocomplete="new-password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Sign in</button>
-      </form>
-    </div>
-    <div class="card-footer text-muted">
-      <a href="/auth/login-page">Already have an account?</a>
-    </div>
+      </div>
+      <input type="hidden" name="role" value="user">
+      <input type="hidden" name="phone_number" value="">
+      <div class="form-group">
+        <label for="newPassword">Password</label>
+        <input id="newPassword" type="password" class="form-control" name="password" autocomplete="new-password" required>
+      </div>
+      <div class="form-group">
+        <label for="verifyPassword">Verify password</label>
+        <input id="verifyPassword" type="password" class="form-control" name="password2" autocomplete="new-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Create account</button>
+      <p id="authError" class="form-error" role="alert" hidden></p>
+    </form>
+    <p class="auth-footer">Already have an account? <a href="/auth/login-page">Log in</a></p>
   </div>
-</div>
-
-
-
-
-
-
+</section>
+{% endblock %}
 

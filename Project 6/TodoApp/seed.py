@@ -3,13 +3,26 @@ from .models import Tracks
 
 
 SAMPLE_TRACKS = (
-    {"title": "Midnight Drive", "artist": "Nova Lane", "explicit": True, "version_group": "midnight-drive"},
-    {"title": "Midnight Drive (Clean)", "artist": "Nova Lane", "explicit": False, "version_group": "midnight-drive"},
-    {"title": "Paper Moons", "artist": "The Skylines", "explicit": False, "version_group": "paper-moons"},
-    {"title": "Paper Moons", "artist": "The Skylines", "explicit": True, "version_group": "paper-moons"},
-    {"title": "Golden Hour", "artist": "Mira Sol", "explicit": False, "version_group": "golden-hour"},
-    {"title": "Static Hearts", "artist": "Northbound", "explicit": True, "version_group": "static-hearts"},
-    {"title": "Static Hearts (Clean)", "artist": "Northbound", "explicit": False, "version_group": "static-hearts"},
+    {"title": "Lucid Dreams", "artist": "Juice WRLD", "explicit": True, "version_group": "lucid-dreams"},
+    {"title": "Lucid Dreams", "artist": "Juice WRLD", "explicit": False, "version_group": "lucid-dreams"},
+    {
+        "title": "All Girls Are the Same",
+        "artist": "Juice WRLD",
+        "explicit": True,
+        "version_group": "all-girls-are-the-same",
+    },
+    {
+        "title": "All Girls Are the Same",
+        "artist": "Juice WRLD",
+        "explicit": False,
+        "version_group": "all-girls-are-the-same",
+    },
+    {"title": "Robbery", "artist": "Juice WRLD", "explicit": True, "version_group": "robbery"},
+    {"title": "Robbery", "artist": "Juice WRLD", "explicit": False, "version_group": "robbery"},
+    {"title": "Wishing Well", "artist": "Juice WRLD", "explicit": True, "version_group": "wishing-well"},
+    {"title": "Wishing Well", "artist": "Juice WRLD", "explicit": False, "version_group": "wishing-well"},
+    {"title": "Righteous", "artist": "Juice WRLD", "explicit": True, "version_group": "righteous"},
+    {"title": "Righteous", "artist": "Juice WRLD", "explicit": False, "version_group": "righteous"},
 )
 
 

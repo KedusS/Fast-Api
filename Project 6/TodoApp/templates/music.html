@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block title %}Juicebox | Music and playlists{% endblock %}
+
+{% block content %}
+<div class="music-page">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">YOUR SOUNDTRACK STARTS HERE</p>
+      <h1>Find your next<br><span>favorite track.</span></h1>
+      <p class="hero-description">Explore the Juice WRLD sample catalog and build a playlist that fits your mood.</p>
+      <a href="#catalog" class="btn btn-primary">Explore the catalog <span aria-hidden="true">↓</span></a>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="record record-one"></div>
+      <div class="record record-two"></div>
+      <div class="hero-sticker">JUICE<br>YOUR<br>DAY</div>
+    </div>
+  </section>
+
+  <section id="catalog" class="content-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">THE COLLECTION</p>
+        <h2>Discover tracks</h2>
+      </div>
+      <p class="muted">Choose songs to put in a playlist.</p>
+    </div>
+    <p id="catalogStatus" class="status-message" role="status">Loading tracks…</p>
+    <div id="trackGrid" class="track-grid"></div>
+  </section>
+
+  <section id="playlists" class="content-section playlist-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">MADE BY YOU</p>
+        <h2>Your playlists</h2>
+      </div>
+      <p class="muted">Save a mix and make clean or explicit versions.</p>
+    </div>
+    <div class="playlist-create">
+      <form id="playlistForm" class="playlist-form">
+        <label for="playlistName">Playlist name</label>
+        <div class="playlist-form-row">
+          <input id="playlistName" class="form-control" name="name" maxlength="100" placeholder="Late night rotation" required>
+          <button class="btn btn-primary" type="submit">Create playlist</button>
+        </div>
+        <p id="playlistStatus" class="status-message" role="status">Select tracks above, then give your playlist a name.</p>
+      </form>
+      <div id="playlistGrid" class="playlist-grid"></div>
+    </div>
+  </section>
+  <footer class="site-footer">A playlist-building demo with song metadata. Audio playback is not provided.</footer>
+</div>
+{% endblock %}

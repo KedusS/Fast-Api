@@ -55,11 +55,11 @@ templates = Jinja2Templates(directory="TodoApp/templates")
 
 @router.get("/login-page")
 def render_login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html", context={})
 
 @router.get("/register-page")
 def render_register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="register.html", context={})
 
 ### Endpoints ###
 def authenticate_user(username: str, password: str, db):
@@ -121,7 +121,6 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
 
     return {'access_token': token, 'token_type': 'bearer'}
-
 
 
 
