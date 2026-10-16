@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -12,8 +13,10 @@ router = APIRouter(
     prefix='/user',
     tags=['user']
 )
+logger = logging.getLogger(__name__)
 
 
+# Provide a database session for the duration of a user request.
 def get_db():
     db = SessionLocal()
     try:
@@ -32,6 +35,7 @@ class UserVerification(BaseModel):
     new_password: str = Field(min_length=6)
 
 
+# Return the database record for the currently signed-in user.
 @router.get('/', status_code=status.HTTP_200_OK)
 async def get_user(user: user_dependency, db: db_dependency):
     if user is None:
@@ -39,6 +43,7 @@ async def get_user(user: user_dependency, db: db_dependency):
     return db.query(Users).filter(Users.id == user.get('id')).first()
 
 
+# Change a user's password after checking their current password.
 @router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(user: user_dependency, db: db_dependency,
                           user_verification: UserVerification):
@@ -54,3 +59,4 @@ async def change_password(user: user_dependency, db: db_dependency,
     user_model.hashed_password = bcrypt_context.hash(user_verification.new_password)
     db.add(user_model)
     db.commit()
+    logger.info("Password changed user_id=%s", user_model.id)

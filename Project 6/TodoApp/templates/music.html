@@ -8,7 +8,7 @@
     <div class="card-header">Your Music Catalog</div>
     <div class="card-body">
       <h1 class="card-title">Discover tracks</h1>
-      <p class="card-text">Choose Juice WRLD tracks to add to a playlist.</p>
+      <p class="card-text">Choose tracks to add to a playlist.</p>
       <p id="catalogStatus" class="status-message" role="status">Loading tracks…</p>
       <div class="table-container">
         <table class="track-table">
@@ -24,6 +24,35 @@
           <tbody id="trackGrid"></tbody>
         </table>
       </div>
+      {% if user and user.user_role == "admin" %}
+      <section class="catalog-admin">
+        <h2 class="card-title">Add a catalog track</h2>
+        <p class="card-text">Use the same version group for clean and explicit versions of the same song.</p>
+        <form id="addTrackForm" class="playlist-form">
+          <div class="form-group">
+            <label for="trackTitle">Title</label>
+            <input id="trackTitle" class="form-control" name="title" maxlength="200" required>
+          </div>
+          <div class="form-group">
+            <label for="trackArtist">Artist</label>
+            <input id="trackArtist" class="form-control" name="artist" maxlength="200" required>
+          </div>
+          <div class="form-group">
+            <label for="versionGroup">Version group</label>
+            <input id="versionGroup" class="form-control" name="version_group" maxlength="100" placeholder="e.g. song-title" required>
+          </div>
+          <div class="form-group">
+            <label for="trackExplicit">Version</label>
+            <select id="trackExplicit" class="form-control" name="explicit">
+              <option value="false">Clean</option>
+              <option value="true">Explicit</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit">Add track</button>
+          <p id="addTrackStatus" class="status-message" role="status"></p>
+        </form>
+      </section>
+      {% endif %}
     </div>
   </section>
 

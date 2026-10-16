@@ -11,3 +11,4 @@ __pycache__/
 .idea
 env
 Project 6/*.db
+Project 6/TodoApp/logs/

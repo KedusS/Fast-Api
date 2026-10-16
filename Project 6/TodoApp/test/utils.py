@@ -41,7 +41,6 @@ def test_user():
         last_name="Roby",
         hashed_password=bcrypt_context.hash("testpassword"),
         role="admin",
-        phone_number="(111)-111-1111"
     )
     db = TestingSessionLocal()
     db.add(user)
@@ -50,8 +49,5 @@ def test_user():
     with engine.connect() as connection:
         connection.execute(text("DELETE FROM users;"))
         connection.commit()
-
-
-
 
 

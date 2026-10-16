@@ -19,7 +19,6 @@
       last_name: form.get("lastname"),
       password: form.get("password"),
       role: "user",
-      phone_number: "",
     };
 
     try {

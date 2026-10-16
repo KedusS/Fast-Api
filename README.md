@@ -1,9 +1,9 @@
 # Juicebox music app
 
-Juicebox is a FastAPI music catalog and playlist app. Its local training catalog
-uses Juice WRLD song titles and supports clean/explicit playlist versions. It
-stores metadata only; it does not provide audio playback or call an external
-music service.
+Juicebox is a FastAPI music catalog and playlist app. The catalog starts empty;
+an administrator can add tracks and pair clean/explicit versions. It stores
+metadata only; it does not provide audio playback or call an external music
+service.
 
 ## Run the app
 
@@ -28,7 +28,17 @@ create and manage playlists:
 - `POST /music/playlists/{playlist_id}/variants/preview` previews clean or
   explicit alternatives without saving a playlist.
 - `POST /music/playlists/{playlist_id}/variants` creates a new playlist with
-  the requested versions. It fails with `422` if any track has no matching
-  version, instead of silently dropping that track.
+  available requested versions and reports tracks that could not be converted.
+  It fails with `422` if no tracks can be converted.
 
 Open `/docs` while the app is running to try the endpoints interactively.
+
+## Basic logging
+
+The app writes request method, path, response status, and duration to the
+development server's console and to `Project 6/TodoApp/logs/juicebox.log`.
+The log file rotates after 1 MB and keeps up to three older files. It also logs
+key account and playlist actions.
+Passwords, tokens, and request bodies are not included. The `/healthy` endpoint
+provides a basic application health check; this project does not include metrics,
+distributed tracing, or a persistent audit history.

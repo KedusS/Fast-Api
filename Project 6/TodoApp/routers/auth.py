@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Annotated
@@ -17,6 +18,7 @@ router = APIRouter(
     prefix='/auth',
     tags=['auth']
 )
+logger = logging.getLogger(__name__)
 
 SECRET_KEY = '197b2c37c391bed93fe80344fe73b806947a65e36206e05a1a23c2fa12702fe3'
 ALGORITHM = 'HS256'
@@ -32,7 +34,6 @@ class CreateUserRequest(BaseModel):
     last_name: str
     password: str
     role: str
-    phone_number: str
 
 
 class Token(BaseModel):
@@ -40,6 +41,7 @@ class Token(BaseModel):
     token_type: str
 
 
+# Provide a database session for each authentication request and close it afterward.
 def get_db():
     db = SessionLocal()
     try:
@@ -55,6 +57,7 @@ templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "
 
 ### Pages ###
 
+# Open a login page and show the current user when a valid session cookie exists.
 @router.get("/login-page")
 def render_login_page(request: Request):
     user = decode_access_token(request.cookies.get("access_token"))
@@ -64,12 +67,14 @@ def render_login_page(request: Request):
         context={"error": None, "user": user},
     )
 
+# Open the account registration page and include any signed-in user information.
 @router.get("/register-page")
 def render_register_page(request: Request):
     user = decode_access_token(request.cookies.get("access_token"))
     return templates.TemplateResponse(request=request, name="register.html", context={"user": user})
 
 
+# Check form credentials, then sign the browser in with a short-lived token cookie.
 @router.post("/login")
 async def login_from_form(
     request: Request,
@@ -91,6 +96,7 @@ async def login_from_form(
         )
 
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
+    logger.info("Browser login succeeded user_id=%s", user.id)
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
         key="access_token",
@@ -105,22 +111,29 @@ async def login_from_form(
 
 
 ### Endpoints ###
+# Find the account by username and verify the submitted password against its hash.
 def authenticate_user(username: str, password: str, db):
     user = db.query(Users).filter(Users.username == username).first()
     if not user:
+        logger.warning("Authentication failed")
         return False
+    # Compare the submitted password to the stored hash; never store or compare plain text.
     if not bcrypt_context.verify(password, user.hashed_password):
+        logger.warning("Authentication failed")
         return False
     return user
 
 
+# Create a signed token containing the user's identity, role, and expiration time.
 def create_access_token(username: str, user_id: int, role: str, expires_delta: timedelta):
+    # Put identity and role in the signed token so protected routes can authorize requests.
     encode = {'sub': username, 'id': user_id, 'role': role}
     expires = datetime.now(timezone.utc) + expires_delta
     encode.update({'exp': expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+# Decode a token and return its user details, or None when it is missing or invalid.
 def decode_access_token(token: str | None) -> dict | None:
     """Return identity data for valid tokens; treat missing or invalid cookies as logged out."""
     if not token:
@@ -137,6 +150,7 @@ def decode_access_token(token: str | None) -> dict | None:
     return {"username": username, "id": user_id, "user_role": payload.get("role")}
 
 
+# Require a valid bearer token and return the signed-in user's details.
 async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     user = decode_access_token(token)
     if user is None:
@@ -147,6 +161,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     return user
 
 
+# Register a new account after hashing its password before it is stored.
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency,
                       create_user_request: CreateUserRequest):
@@ -158,13 +173,15 @@ async def create_user(db: db_dependency,
         role=create_user_request.role,
         hashed_password=bcrypt_context.hash(create_user_request.password),
         is_active=True,
-        phone_number=create_user_request.phone_number
     )
 
     db.add(create_user_model)
     db.commit()
+    db.refresh(create_user_model)
+    logger.info("Account created user_id=%s", create_user_model.id)
 
 
+# Authenticate API clients and return a bearer token for later requests.
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                                  db: db_dependency):
@@ -173,7 +190,6 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail='Could not validate user.')
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
+    logger.info("API login succeeded user_id=%s", user.id)
 
     return {'access_token': token, 'token_type': 'bearer'}
-
-

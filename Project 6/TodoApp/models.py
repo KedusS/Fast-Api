@@ -13,12 +13,12 @@ class Users(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     role = Column(String)
-    phone_number = Column(String)
 
 
 class Tracks(Base):
     __tablename__ = 'tracks'
     __table_args__ = (
+        # Each song version group can contain at most one clean and one explicit track.
         UniqueConstraint('version_group', 'explicit', name='uq_track_version_explicit'),
     )
 

@@ -21,6 +21,8 @@
   const cancelPlaylistEdit = document.getElementById("cancelPlaylistEdit");
   const passwordForm = document.getElementById("passwordForm");
   const passwordStatus = document.getElementById("passwordStatus");
+  const addTrackForm = document.getElementById("addTrackForm");
+  const addTrackStatus = document.getElementById("addTrackStatus");
 
   if (!trackGrid || !catalogStatus || !playlistGrid || !playlistStatus || !playlistForm) return;
 
@@ -32,6 +34,29 @@
   } else {
     playlistStatus.textContent = "Log in to save and manage your playlists.";
   }
+
+  addTrackForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(addTrackForm);
+    try {
+      await apiRequest("/music/tracks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.get("title"),
+          artist: form.get("artist"),
+          version_group: form.get("version_group"),
+          // Form fields are strings; convert the select value to a JSON boolean.
+          explicit: form.get("explicit") === "true",
+        }),
+      });
+      addTrackForm.reset();
+      setStatus(addTrackStatus, "Track added to the catalog.");
+      await loadTracks();
+    } catch (error) {
+      setStatus(addTrackStatus, error.message, true);
+    }
+  });
 
   playlistForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -119,7 +144,7 @@
       }
 
       const targetExplicit = button.dataset.targetExplicit === "true";
-      await apiRequest(`/music/playlists/${playlistId}/variants`, {
+      const variant = await apiRequest(`/music/playlists/${playlistId}/variants`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -127,7 +152,13 @@
           target_explicit: targetExplicit,
         }),
       });
-      setStatus(playlistStatus, "Playlist version created.");
+      const skippedTracks = variant.unconverted_tracks;
+      const message = skippedTracks.length
+        ? `Playlist version created. These tracks were not converted: ${skippedTracks
+          .map((track) => `${track.title} · ${track.artist}`)
+          .join(", ")}.`
+        : "Playlist version created.";
+      setStatus(playlistStatus, message);
       await loadPlaylists();
     } catch (error) {
       setStatus(playlistStatus, error.message, true);
@@ -140,7 +171,12 @@
     try {
       tracks = await apiRequest("/music/tracks");
       renderTracks();
-      setStatus(catalogStatus, `${tracks.length} tracks in the catalog.`);
+      setStatus(
+        catalogStatus,
+        tracks.length
+          ? `${tracks.length} tracks in the catalog.`
+          : "No tracks yet. An admin can add tracks to the catalog.",
+      );
     } catch (error) {
       setStatus(catalogStatus, `Could not load tracks: ${error.message}`, true);
     }
@@ -165,6 +201,7 @@
       const number = document.createElement("td");
       number.textContent = String(index + 1);
       const title = document.createElement("td");
+      // Use textContent for catalog data so titles are rendered as text, not HTML.
       title.textContent = track.title;
       const artist = document.createElement("td");
       artist.textContent = track.artist;
